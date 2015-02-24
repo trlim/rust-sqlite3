@@ -7,25 +7,25 @@
 //!
 //! ```rust
 //! extern crate sqlite3;
-//! 
+//!
 //! use sqlite3::{
 //!     DatabaseConnection,
 //!     SqliteResult,
 //! };
-//! 
+//!
 //! fn convenience_exec() -> SqliteResult<DatabaseConnection> {
 //!     let mut conn = try!(DatabaseConnection::in_memory());
-//! 
+//!
 //!     try!(conn.exec("
 //!        create table items (
 //!                    id integer,
 //!                    description varchar(40),
 //!                    price integer
 //!                    )"));
-//! 
+//!
 //!     Ok(conn)
 //! }
-//! 
+//!
 //! fn typical_usage(conn: &mut DatabaseConnection) -> SqliteResult<String> {
 //!     {
 //!         let mut stmt = try!(conn.prepare(
@@ -48,11 +48,11 @@
 //!                 let id = row1.column_int(0);
 //!                 let desc_opt = row1.column_text(1).expect("desc_opt should be non-null");
 //!                 let price = row1.column_int(2);
-//! 
+//!
 //!                 assert_eq!(id, 1);
 //!                 assert_eq!(desc_opt, format!("stuff"));
 //!                 assert_eq!(price, 10);
-//! 
+//!
 //!                 Ok(format!("row: {}, {}, {}", id, desc_opt, price))
 //!             },
 //!             Err(oops) => panic!(oops),
@@ -60,7 +60,7 @@
 //!         }
 //!     }
 //! }
-//! 
+//!
 //! pub fn main() {
 //!     match convenience_exec() {
 //!         Ok(ref mut db) => {
@@ -251,7 +251,7 @@ impl DatabaseConnection {
         match decode_result(r, "sqlite3_prepare_v2", maybe(self.detailed, self.db)) {
             Ok(()) => {
                 let offset = tail as usize - z_sql as usize;
-                Ok((PreparedStatement { stmt: stmt , detailed: self.detailed }, offset))
+                Ok((PreparedStatement { stmt: stmt , detailed: self.detailed, unused: self }, offset))
             },
             Err(code) => Err(code)
         }
@@ -347,7 +347,8 @@ pub fn str_charstar<'a>(s: &'a str) -> std_ffi::CString {
 /// A prepared statement.
 pub struct PreparedStatement<'db> {
     stmt: *mut ffi::sqlite3_stmt,
-    detailed: bool
+    detailed: bool,
+    unused: &'db DatabaseConnection
 }
 
 #[unsafe_destructor]
